@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import uiak.exper.batch.framework.ConsoleItemWriter;
+import uiak.exper.batch.framework.CustomJobExecListener;
 import uiak.exper.batch.framework.InvoiceItemReaderFromYaml;
 import uiak.exper.batch.model.Invoice;
 
@@ -30,11 +31,15 @@ public class BatchConfiguration {
         return new InvoiceItemReaderFromYaml();
     }
 
+    // try : Split, Decision, multistep, Flow
+    // prevent restart : don't restart failed job where it failed. always start new instance
     //Job
     @Bean
     public Job simpleJob(Step simpleStep) {
         return jobBuilderFactory.get("simpleJob")
                 .incrementer(new RunIdIncrementer())
+                .listener(new CustomJobExecListener())
+                .preventRestart()
                 .flow(simpleStep)
                 .end()
                 .build();
