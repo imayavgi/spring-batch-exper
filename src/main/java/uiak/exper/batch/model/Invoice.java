@@ -8,10 +8,8 @@ import java.util.List;
 @Entity
 public class Invoice {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    public Long id;
-
     public Integer invoice; // invoice
+
     public String date; // date
 
     @OneToOne(cascade = CascadeType.ALL)

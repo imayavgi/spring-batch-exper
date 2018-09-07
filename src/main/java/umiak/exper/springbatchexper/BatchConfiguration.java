@@ -61,6 +61,18 @@ public class BatchConfiguration {
     }
 
     // Step
+
+    @Bean
+    public Step dbStep() {
+        return stepBuilderFactory.get("simpleStep")
+                .<Invoice, Invoice> chunk(2)
+                .reader(invoiceSourceDataReader())
+                .processor(new PassThroughItemProcessor())
+                .writer(dbWriter())
+                .build();
+    }
+
+    /*
     @Bean
     public Step simpleStep() {
         return stepBuilderFactory.get("simpleStep")
@@ -71,17 +83,7 @@ public class BatchConfiguration {
                 .build();
     }
 
-    @Bean
-    public Step dbStep() {
-        return stepBuilderFactory.get("simpleStep")
-                .<Invoice, Invoice> chunk(1)
-                .reader(invoiceSourceDataReader())
-                .processor(new PassThroughItemProcessor())
-                .writer(dbWriter())
-                .build();
-    }
-
-    /*
+    // Removed after adding JPA
     @Bean(name="dataSource")
     public DriverManagerDataSource dataSource(Environment env){
         DriverManagerDataSource dataSource= new DriverManagerDataSource();

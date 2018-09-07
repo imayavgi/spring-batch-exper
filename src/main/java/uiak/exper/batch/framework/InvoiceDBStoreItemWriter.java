@@ -21,12 +21,16 @@ public class InvoiceDBStoreItemWriter<T> implements ItemWriter<T> {
 
     @Override
     public void write(List<? extends T> list) throws Exception {
-        LOG.trace("DB item writer starts");
+        LOG.info("DB item writer starts");
         for (T item : list) {
             LOG.info("DB ITEM WRITER " + item);
-            repo.save((Invoice)item);
+            int invid = ((Invoice)item).invoice;
+            if (repo.findById(invid) == null )
+                repo.save((Invoice)item);
+            else
+                LOG.info(" FOUND Invoice with number " + invid + " Skipping ");
         }
-        LOG.trace("DB item writer ends");
+        LOG.info("DB item writer ends");
     }
 
 
