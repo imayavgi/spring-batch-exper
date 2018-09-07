@@ -11,6 +11,7 @@ import org.springframework.batch.item.support.PassThroughItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import uiak.exper.batch.framework.ConsoleItemWriter;
@@ -58,7 +59,7 @@ public class BatchConfiguration {
                 .build();
     }
 
-
+    /*
     @Bean(name="dataSource")
     public DriverManagerDataSource dataSource(Environment env){
         DriverManagerDataSource dataSource= new DriverManagerDataSource();
@@ -68,4 +69,6 @@ public class BatchConfiguration {
         dataSource.setPassword(env.getProperty("batch.jdbc.password"));
         return dataSource;
     }
+    */
+
 }
