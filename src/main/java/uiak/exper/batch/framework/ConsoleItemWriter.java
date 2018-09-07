@@ -13,11 +13,11 @@ public class ConsoleItemWriter<T> implements ItemWriter<T> {
 
     @Override
     public void write(List<? extends T> items) throws Exception {
-        LOG.trace("Console item writer starts");
+        LOG.info("Console item writer starts");
         for (T item : items) {
             LOG.info("CONSOLE ITEM WRITER " + item);
         }
-        LOG.trace("Console item writer ends");
+        LOG.info("Console item writer ends");
 
     }
 }

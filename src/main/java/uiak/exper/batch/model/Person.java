@@ -10,6 +10,6 @@ public class Person {
     public String given;
     public String family;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     public Address address;
 }
