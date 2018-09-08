@@ -13,10 +13,11 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import uiak.exper.batch.framework.ConsoleItemWriter;
+import org.springframework.jdbc.core.JdbcTemplate;
 import uiak.exper.batch.framework.CustomJobExecListener;
 import uiak.exper.batch.framework.InvoiceDBStoreItemWriter;
 import uiak.exper.batch.framework.InvoiceItemReaderFromYaml;
+import uiak.exper.batch.framework.InvoiceSummaryReportTaskLet;
 import uiak.exper.batch.model.Invoice;
 import uiak.exper.batch.store.InvoiceRepository;
 
@@ -34,6 +35,9 @@ public class BatchConfiguration {
 
     @Autowired
     private InvoiceRepository invoiceRepo;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
 
     @Bean
@@ -69,6 +73,7 @@ public class BatchConfiguration {
                 .listener(new CustomJobExecListener())
                 .preventRestart()
                 .start(loadFileToDbStep())
+                .next(invoiceSummaryStep())
                 .build();
     }
 
@@ -82,6 +87,19 @@ public class BatchConfiguration {
                 .processor(new PassThroughItemProcessor())
                 .writer(dbWriter())
                 .build();
+    }
+
+    @Bean
+    public Step invoiceSummaryStep() {
+        return this.stepBuilderFactory.get("invoiceSummaryStep")
+                .tasklet(fileDeletingTasklet())
+                .build();
+    }
+
+    @Bean
+    public InvoiceSummaryReportTaskLet fileDeletingTasklet() {
+        InvoiceSummaryReportTaskLet tasklet = new InvoiceSummaryReportTaskLet(jdbcTemplate);
+        return tasklet;
     }
 
     /*

@@ -25,10 +25,14 @@ public class InvoiceDBStoreItemWriter<T> implements ItemWriter<T> {
         for (T item : list) {
             LOG.info("DB ITEM WRITER " + item);
             int invid = ((Invoice)item).invoice;
-            if (repo.findById(invid) == null )
-                repo.save((Invoice)item);
-            else
+            if (repo.findById(invid).isPresent() )
                 LOG.info(" FOUND Invoice with number " + invid + " Skipping ");
+            else {
+                LOG.info(" NOT FOUND Invoice with number " + invid + " Saving  ");
+                repo.save((Invoice)item);
+            }
+
+
         }
         LOG.info("DB item writer ends");
     }
