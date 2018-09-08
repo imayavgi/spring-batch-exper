@@ -49,22 +49,34 @@ public class BatchConfiguration {
     // try : Split, Decision, multistep, Flow
     // prevent restart : don't restart failed job where it failed. always start new instance
     //Job
+    /*
     @Bean
-    public Job simpleJob() {
-        return jobBuilderFactory.get("simpleJob")
+    public Job fileLoadJob() {
+        return jobBuilderFactory.get("invoiceLoadJob")
                 .incrementer(new RunIdIncrementer())
                 .listener(new CustomJobExecListener())
                 .preventRestart()
-                .flow(dbStep())
+                .flow(loadFileToDbStep())
                 .end()
+                .build();
+    }
+    */
+
+    @Bean
+    public Job fileLoadJob() {
+        return jobBuilderFactory.get("invoiceLoadJob")
+                .incrementer(new RunIdIncrementer())
+                .listener(new CustomJobExecListener())
+                .preventRestart()
+                .start(loadFileToDbStep())
                 .build();
     }
 
     // Step
 
     @Bean
-    public Step dbStep() {
-        return stepBuilderFactory.get("simpleStep")
+    public Step loadFileToDbStep() {
+        return stepBuilderFactory.get("loadFileToDbStep")
                 .<Invoice, Invoice> chunk(2)
                 .reader(invoiceSourceDataReader())
                 .processor(new PassThroughItemProcessor())
