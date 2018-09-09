@@ -93,8 +93,9 @@ public class BatchConfiguration {
                 .listener(new CustomJobExecListener())
                 .preventRestart()
                 .start(invoiceLoadStep())
-                .next(invoiceSummaryStep())
-                .next(rawProductDataAggregatorStep())
+                .on("*").to(invoiceSummaryStep())
+                .from(invoiceLoadStep()).on("FAILED").to(rawProductDataAggregatorStep())
+                .end()
                 .build();
     }
 
