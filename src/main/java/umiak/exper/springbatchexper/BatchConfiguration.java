@@ -103,7 +103,7 @@ public class BatchConfiguration {
     @Bean
     public Step dependancyValidationStep() {
         return stepBuilderFactory.get("dependancyValidationStep")
-                .listener(new StepValidationStepListener())
+                .listener(new StepValidationStepListener(inputCSVresources))
                 .tasklet(new NoOpTasklet())
                 .build();
     }
