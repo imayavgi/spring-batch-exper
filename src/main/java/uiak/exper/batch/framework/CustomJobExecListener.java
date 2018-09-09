@@ -16,6 +16,6 @@ public class CustomJobExecListener implements JobExecutionListener {
 
     @Override
     public void afterJob(JobExecution jobExecution) {
-        LOG.info("JOB EXECUTION STATUS  AFTER JOB " + jobExecution.getExitStatus() + " at  " +  jobExecution.getEndTime());
+        LOG.info("JOB EXECUTION STATUS  AFTER JOB " + jobExecution + " at  " +  jobExecution.getEndTime());
     }
 }

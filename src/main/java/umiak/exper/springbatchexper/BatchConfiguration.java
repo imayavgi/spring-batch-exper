@@ -6,6 +6,7 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.step.tasklet.TaskletStep;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
@@ -27,10 +28,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
-import uiak.exper.batch.framework.CustomJobExecListener;
-import uiak.exper.batch.framework.InvoiceDBStoreItemWriter;
-import uiak.exper.batch.framework.InvoiceItemReaderFromYaml;
-import uiak.exper.batch.framework.InvoiceSummaryReportTaskLet;
+import uiak.exper.batch.framework.*;
 import uiak.exper.batch.model.Invoice;
 import uiak.exper.batch.model.Product;
 import uiak.exper.batch.store.InvoiceRepository;
@@ -92,7 +90,8 @@ public class BatchConfiguration {
                 .incrementer(new RunIdIncrementer())
                 .listener(new CustomJobExecListener())
                 .preventRestart()
-                .start(invoiceLoadStep())
+                .start(dependancyValidationStep()).on("FAILED").end("FAILED")
+                .next(invoiceLoadStep())
                 .on("*").to(invoiceSummaryStep())
                 .from(invoiceLoadStep()).on("FAILED").to(rawProductDataAggregatorStep())
                 .end()
@@ -100,6 +99,14 @@ public class BatchConfiguration {
     }
 
     // Step
+
+    @Bean
+    public Step dependancyValidationStep() {
+        return stepBuilderFactory.get("dependancyValidationStep")
+                .listener(new StepValidationStepListener())
+                .tasklet(new NoOpTasklet())
+                .build();
+    }
 
     @Bean
     public Step invoiceLoadStep() {

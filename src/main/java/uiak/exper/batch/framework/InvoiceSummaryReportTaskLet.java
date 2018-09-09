@@ -28,6 +28,6 @@ public class InvoiceSummaryReportTaskLet implements Tasklet {
 
         LOG.info(" Invoice Row Count is " + rowCount);
 
-        return null;
+        return RepeatStatus.FINISHED;
     }
 }
