@@ -7,11 +7,24 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.MultiResourceItemReader;
+import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
+import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
+import org.springframework.batch.item.file.builder.MultiResourceItemReaderBuilder;
+import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
+import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
+import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.support.PassThroughItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
 import uiak.exper.batch.framework.CustomJobExecListener;
@@ -19,6 +32,7 @@ import uiak.exper.batch.framework.InvoiceDBStoreItemWriter;
 import uiak.exper.batch.framework.InvoiceItemReaderFromYaml;
 import uiak.exper.batch.framework.InvoiceSummaryReportTaskLet;
 import uiak.exper.batch.model.Invoice;
+import uiak.exper.batch.model.Product;
 import uiak.exper.batch.store.InvoiceRepository;
 
 @Configuration
@@ -38,6 +52,12 @@ public class BatchConfiguration {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Value("file:/tmp/raw-*.csv")
+    private Resource[] inputCSVresources;
+
+    @Value("file:/tmp/clean-products.csv")
+    private Resource outputCSVresources;
 
 
     @Bean
@@ -67,21 +87,22 @@ public class BatchConfiguration {
     */
 
     @Bean
-    public Job fileLoadJob() {
+    public Job invoiceLoadJob() {
         return jobBuilderFactory.get("invoiceLoadJob")
                 .incrementer(new RunIdIncrementer())
                 .listener(new CustomJobExecListener())
                 .preventRestart()
-                .start(loadFileToDbStep())
+                .start(invoiceLoadStep())
                 .next(invoiceSummaryStep())
+                .next(rawProductDataAggregatorStep())
                 .build();
     }
 
     // Step
 
     @Bean
-    public Step loadFileToDbStep() {
-        return stepBuilderFactory.get("loadFileToDbStep")
+    public Step invoiceLoadStep() {
+        return stepBuilderFactory.get("invoiceLoadStep")
                 .<Invoice, Invoice> chunk(2)
                 .reader(invoiceSourceDataReader())
                 .processor(new PassThroughItemProcessor())
@@ -100,6 +121,59 @@ public class BatchConfiguration {
     public InvoiceSummaryReportTaskLet fileDeletingTasklet() {
         InvoiceSummaryReportTaskLet tasklet = new InvoiceSummaryReportTaskLet(jdbcTemplate);
         return tasklet;
+    }
+
+    @Bean
+    public MultiResourceItemReader rawProductCSVReader() {
+        return new MultiResourceItemReaderBuilder<Product>()
+                .name("rawProductCSVReader")
+                .delegate(flatFileItemReader())
+                .resources(inputCSVresources )
+                .build();
+    }
+
+
+    @Bean
+    public FlatFileItemReader<Product> flatFileItemReader() {
+        return new FlatFileItemReaderBuilder<Product>()
+                .name("rawProductReader")
+                .delimited()
+                .names(new String[]{"id", "sku", "quantity", "description", "price"})
+                .fieldSetMapper(new BeanWrapperFieldSetMapper<Product>() {
+                    {
+                    setTargetType(Product.class);
+                    }
+                }
+                )
+                .build();
+    }
+
+    @Bean
+    public ItemWriter<Product> cleanProductCSVWriter() {
+        return new FlatFileItemWriterBuilder<Product>()
+                .name("cleanProductCSVWriter")
+                .resource(outputCSVresources)
+                .lineAggregator(new DelimitedLineAggregator<Product>() {
+                    {
+                        setDelimiter("|");
+                        setFieldExtractor(new BeanWrapperFieldExtractor<Product>() {
+                            {
+                                setNames(new String[] {"id", "sku", "quantity", "description", "price"});
+                            }
+                        });
+                    }
+                })
+                .build();
+    }
+
+    @Bean
+    public Step rawProductDataAggregatorStep() {
+        return stepBuilderFactory.get("rawProductDataAggregatorStep")
+                .<Invoice, Invoice> chunk(2)
+                .reader(rawProductCSVReader())
+                .processor(new PassThroughItemProcessor())
+                .writer(cleanProductCSVWriter())
+                .build();
     }
 
     /*
