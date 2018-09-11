@@ -2,9 +2,11 @@ package umiak.exper.springbatchexper;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.step.tasklet.TaskletStep;
 import org.springframework.batch.item.ItemReader;
@@ -22,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
@@ -37,6 +40,7 @@ import uiak.exper.batch.store.InvoiceRepository;
 @EnableBatchProcessing
 @EnableJpaRepositories("uiak.exper.batch.store")
 @EntityScan("uiak.exper.batch.model")
+@ComponentScan(basePackages = "uiak.exper.batch.web")
 public class BatchConfiguration {
 
     @Autowired
@@ -47,6 +51,9 @@ public class BatchConfiguration {
 
     @Autowired
     private InvoiceRepository invoiceRepo;
+
+    @Autowired
+    JobRegistry jobRegistry;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -85,6 +92,13 @@ public class BatchConfiguration {
     */
 
     @Bean
+    public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor() {
+        JobRegistryBeanPostProcessor postProcessor = new JobRegistryBeanPostProcessor();
+        postProcessor.setJobRegistry(jobRegistry);
+        return postProcessor;
+    }
+
+    @Bean
     public Job invoiceLoadJob() {
         return jobBuilderFactory.get("invoiceLoadJob")
                 .incrementer(new RunIdIncrementer())
@@ -93,7 +107,7 @@ public class BatchConfiguration {
                 .start(dependancyValidationStep()).on("FAILED").end("FAILED")
                 .next(invoiceLoadStep())
                 .on("*").to(invoiceSummaryStep())
-                .from(invoiceLoadStep()).on("FAILED").to(rawProductDataAggregatorStep())
+                .next(rawProductDataAggregatorStep())
                 .end()
                 .build();
     }

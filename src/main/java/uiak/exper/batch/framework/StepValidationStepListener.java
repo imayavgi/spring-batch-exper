@@ -24,7 +24,7 @@ public class StepValidationStepListener implements StepExecutionListener {
     @Override
     public ExitStatus afterStep(StepExecution stepExecution) {
         LOG.info("StepValidationStepListener : afterStep  "  + stepExecution);
-        if (stepExecution.getExitStatus() == ExitStatus.COMPLETED & (inputFileResource != null & inputFileResource.length > 0) )
+        if (inputFileResource != null & inputFileResource.length > 0 )
             return ExitStatus.COMPLETED;
         else
             return ExitStatus.FAILED;
