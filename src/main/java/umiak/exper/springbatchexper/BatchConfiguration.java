@@ -29,6 +29,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
 import uiak.exper.batch.framework.*;
@@ -96,6 +98,11 @@ public class BatchConfiguration {
         JobRegistryBeanPostProcessor postProcessor = new JobRegistryBeanPostProcessor();
         postProcessor.setJobRegistry(jobRegistry);
         return postProcessor;
+    }
+
+    @Bean
+    public TaskExecutor taskExecutor(){
+        return new SimpleAsyncTaskExecutor("spring_batch");
     }
 
     @Bean
@@ -195,6 +202,7 @@ public class BatchConfiguration {
                 .reader(rawProductCSVReader())
                 .processor(new PassThroughItemProcessor())
                 .writer(cleanProductCSVWriter())
+                .taskExecutor(taskExecutor())
                 .build();
     }
 
